@@ -53,9 +53,11 @@ import logo from './logo.png';    // ❌ don't import media
 
 Restart Studio, or bust the Remotion cache: delete `node_modules/.cache/remotion`.
 
-### Video `startFrom` / `endAt` are in source-video frames at source fps
+### Video `trimBefore` / `trimAfter` are in source-video frames at source fps
 
-Not composition frames. If your source is 24fps and the composition is 30fps, `startFrom={30}` trims 30 frames of the source (1.25s), not 1s of the composition.
+Not composition frames. If your source is 24fps and the composition is 30fps, `trimBefore={30}` trims 30 frames of the source (1.25s), not 1s of the composition.
+
+The old names `startFrom` / `endAt` still work but are **deprecated since 4.0.319**. If you see them in existing code, rename on touch.
 
 ## Randomness / determinism
 
@@ -89,6 +91,18 @@ if (typeof window !== 'undefined') {
 ### Dynamic imports of node-only modules
 
 Remotion bundles with webpack — node built-ins aren't available to composition code. Keep `fs`, `path`, etc. out of compositions. Do file work in `calculateMetadata` or ahead of time and pass results as props.
+
+### Vite is not supported
+
+Remotion uses its own webpack configuration and there is no official Vite story. If a user asks, the answer is "run Remotion with its own bundler; Vite can still power the surrounding app that embeds `<Player>`."
+
+### Async work without `delayRender` captures empty frames
+
+If you `fetch()` JSON or load a custom `FontFace` inside a component, the renderer takes the screenshot before the promise resolves. Wrap async work in `delayRender()` and call `continueRender(handle)` when done (or `cancelRender(err)` on failure). Default timeout is 30 s — bump with `delayRender('msg', {timeoutInMilliseconds: 60000})` or `Config.setDelayRenderTimeoutInMilliseconds(...)`. Missing `continueRender` = hung render.
+
+### Custom fonts loaded via `<link>` render as fallback for the first frames
+
+The browser loads fonts asynchronously, and the first Remotion frames will already be captured before the font arrives — so they render in the fallback font. Use `@remotion/google-fonts` (handles `delayRender` internally) or wrap `new FontFace(...).load()` in your own `delayRender` / `continueRender`.
 
 ## Props
 
@@ -136,4 +150,4 @@ Studio's sidebar caches the composition list. Hard-refresh the browser if a new 
 
 ## Licensing
 
-Remotion's license charges companies with 4+ employees. Flag this to the user for any commercial use — solo/hobby use is free. Link: https://www.remotion.dev/docs/license.
+Remotion charges for-profit organisations with **more than 3 employees**. Flag this to the user for any commercial use — solo/hobby and ≤3-employee company use is free. Link: https://www.remotion.dev/docs/license.

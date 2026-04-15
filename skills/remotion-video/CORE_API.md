@@ -108,21 +108,27 @@ const jitter = random(`dot-${i}`) * 10;
 ### `<Img src>`
 Remotion-aware image. Waits for load before advancing frames during render.
 
-### `<Video src>` vs `<OffthreadVideo src>`
-Both play video frames synced to the composition. **Prefer `<OffthreadVideo>` for mp4** — it decodes off-thread and is faster to render. Use `<Video>` if you need DOM playback behavior (e.g., in Studio interactions).
+### `<Video>` / `<OffthreadVideo>` (and the new `@remotion/media` `<Video>`)
+
+Three options as of Remotion 4.x:
+
+- **`<OffthreadVideo>`** from `'remotion'` — decodes off-thread, fastest for MP4 renders. **Default choice for rendering.**
+- **`<Video>`** from `'remotion'` — uses a DOM `<video>` element; use when you need native playback semantics in Studio/`<Player>`.
+- **`<Video>`** from `@remotion/media` — newer, positioned to eventually replace the DOM-based `<Video>`. Worth using if a project already depends on `@remotion/media`.
 
 ```tsx
-<OffthreadVideo src={staticFile('clip.mp4')} startFrom={30} endAt={150} />
+<OffthreadVideo src={staticFile('clip.mp4')} trimBefore={30} trimAfter={150} />
 ```
 
-- `startFrom` / `endAt` — trim the source video (in source-video frames).
+- `trimBefore` / `trimAfter` — trim the source video (in source-video frames).
+- Legacy names `startFrom` / `endAt` still work but are **deprecated since 4.0.319**. Always write `trimBefore` / `trimAfter` in new code.
 - Place inside a `<Sequence>` to time when it appears.
 
 ### `<Audio src>`
 ```tsx
-<Audio src={staticFile('music.mp3')} volume={0.5} startFrom={0} />
+<Audio src={staticFile('music.mp3')} volume={0.5} trimBefore={0} />
 ```
-`volume` can be a number or a function `(frame) => number` for fades.
+`volume` can be a number or a function `(frame) => number` for fades. Same `trimBefore` / `trimAfter` rename applies.
 
 ### `staticFile(path: string): string`
 Resolves a file in `public/`. Never prefix with `/public`. Never `import` media files.
@@ -137,6 +143,41 @@ Resolves a file in `public/`. Never prefix with `/public`. Never `import` media 
 - `<Freeze frame={N}>` — freeze children at a given frame.
 - `<Loop durationInFrames={N}>` — repeat children every N frames.
 - `<Still>` — mark a composition as a single-frame image.
+
+## Async work (`delayRender` / `continueRender`)
+
+The renderer snapshots each frame as soon as React commits. Any async work — font loading, fetching JSON, waiting for image decode — must block the snapshot with `delayRender()`:
+
+```tsx
+import {delayRender, continueRender} from 'remotion';
+
+const [handle] = useState(() => delayRender('Loading caption data'));
+const [captions, setCaptions] = useState<Caption[]>([]);
+
+useEffect(() => {
+  fetch(staticFile('captions.json'))
+    .then((r) => r.json())
+    .then((data) => {
+      setCaptions(data);
+      continueRender(handle);
+    })
+    .catch((err) => cancelRender(err));
+}, [handle]);
+```
+
+- `delayRender(label?)` returns a handle; the render waits until every outstanding handle is passed to `continueRender(handle)` or `cancelRender(err)`.
+- Default timeout is 30 s. Override via `delayRender('msg', {timeoutInMilliseconds: 60000})` or `Config.setDelayRenderTimeoutInMilliseconds(...)` in `remotion.config.ts`.
+- The label shows up in error messages — make it specific.
+- If you forget to call `continueRender`, renders hang and time out.
+
+## `calculateMetadata`
+
+Dynamic per-composition metadata computed from props. Can override `durationInFrames`, `width`, `height`, `fps`, and merge into `defaultProps`. See `RENDERING.md#calculatemetadata--dynamic-durationdimensions-from-props`.
+
+## `measureSpring` vs `springTiming`
+
+- `measureSpring({fps, config})` from `'remotion'` → number of frames until a spring settles. Handy when you need to size a `<Sequence>` to fit a spring.
+- `springTiming({config, durationInFrames?})` from `@remotion/transitions` → the same concept, but returns a timing object for `<TransitionSeries.Transition>`.
 
 ## TypeScript
 

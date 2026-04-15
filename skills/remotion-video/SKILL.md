@@ -1,11 +1,21 @@
 ---
 name: remotion-video
-description: Build videos programmatically with Remotion (React-based video framework). Use when scaffolding a new video project, authoring Compositions/Sequences, animating with useCurrentFrame/interpolate/spring, working with Audio/Video/Img/staticFile, rendering via `remotion render` / Studio / Lambda, or debugging frame-based animation issues. Trigger on files importing from "remotion" or any "@remotion/*" package, on remotion.config.ts, or when the user mentions Remotion, programmatic video, or MP4/WebM generation from React.
+description: Build videos programmatically with Remotion (React-based video framework). Use when scaffolding a new video project, authoring Compositions/Sequences, animating with useCurrentFrame/interpolate/spring, working with Audio/OffthreadVideo/Img/staticFile, using delayRender for async work, rendering via `remotion render` / Studio / Lambda, embedding a `<Player>`, or debugging frame-based animation issues. Trigger on files importing from "remotion" or any "@remotion/*" package, on remotion.config.ts, or when the user mentions Remotion, programmatic video, MP4/WebM generation from React, or embedding a Remotion Player.
 ---
 
 # Remotion video skill
 
 Remotion renders React components to video frame-by-frame. Every pixel is computed from `useCurrentFrame()` — there is no real-time clock. Internalize that and most Remotion code writes itself.
+
+**Current major version: Remotion 4.x** (no v5 exists as of April 2026). Don't hallucinate v5 APIs.
+
+## Confirm before writing code
+
+Users routinely under-specify these three — confirm or state your assumption before generating a composition:
+
+- **Dimensions** (1920×1080, 1080×1920 vertical, 1080×1080 square, 4K?)
+- **fps** (30 for most platforms, 60 for smooth motion, 24 for cinematic)
+- **Duration** — in seconds or frames. Convert: `durationInFrames = Math.round(seconds * fps)`.
 
 ## When this skill applies
 
@@ -25,12 +35,14 @@ Remotion renders React components to video frame-by-frame. Every pixel is comput
 ## Non-negotiable rules
 
 1. **Animation is driven by `useCurrentFrame()`**, never `Date.now()`, `setTimeout`, `setInterval`, `requestAnimationFrame`, or CSS `transition`/`animation`. CSS keyframes break frame-accurate rendering.
-2. **Use Remotion media primitives**: `<Audio>`, `<Video>`/`<OffthreadVideo>`, `<Img>`. Raw `<video>`/`<audio>`/`<img>` desync or miss from the output.
+2. **Use Remotion media primitives**: `<Audio>`, `<OffthreadVideo>` (preferred for mp4) or `<Video>`, `<Img>`. Raw `<video>`/`<audio>`/`<img>` desync or miss from the output. To trim, use `trimBefore` / `trimAfter` (the old `startFrom` / `endAt` names are deprecated since 4.0.319).
 3. **Assets**: anything not a URL must live in `public/` and be resolved with `staticFile('path/in/public.ext')`. Don't `import` mp4/png paths. Don't prefix with `/public`.
 4. **`interpolate` ranges must be strictly monotonic** and you almost always want `{extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}` — otherwise values shoot past their endpoints.
 5. **Randomness must be deterministic** — use `random(seed)` from `remotion`, not `Math.random()`. Otherwise each frame renders differently.
 6. **Composition renders under SSR** during bundling. No `window`/`document` at module top-level. Guard with `typeof window !== 'undefined'` or `useEffect`.
-7. **`durationInFrames` is an integer ≥ 1**. The last rendered frame is `durationInFrames - 1`. Convert seconds: `durationInFrames = seconds * fps`.
+7. **`durationInFrames` is an integer ≥ 1**. The last rendered frame is `durationInFrames - 1`. Convert seconds: `durationInFrames = Math.round(seconds * fps)`.
+8. **Async work during render must be wrapped in `delayRender()` / `continueRender()`**. Fonts, fetched data, image preload — without this, the renderer captures the frame before the async work finishes. See `CORE_API.md#async-work-delayrender`.
+9. **Custom fonts**: use `@remotion/google-fonts` (or `delayRender` around a `FontFace.load()`). A plain `<link>` tag in HTML will race the renderer and the first frames will render with a fallback font.
 
 ## Skeleton of a Composition component
 
@@ -79,9 +91,10 @@ export const RemotionRoot: React.FC = () => (
 Load these only when needed — keep `SKILL.md` in context by default:
 
 - [`SETUP.md`](SETUP.md) — scaffold commands, templates, project layout, licensing note.
-- [`CORE_API.md`](CORE_API.md) — Composition, Sequence, hooks, interpolate, spring, media components — with signatures and examples.
-- [`PATTERNS.md`](PATTERNS.md) — fade, slide, stagger, typewriter, parallax, camera moves, audio-reactive.
-- [`RENDERING.md`](RENDERING.md) — CLI, props passing, Zod schemas, Lambda, Cloud Run, programmatic API.
+- [`CORE_API.md`](CORE_API.md) — Composition, Sequence, hooks, interpolate, spring, media components, `delayRender` — with signatures and examples.
+- [`PATTERNS.md`](PATTERNS.md) — fade, slide, stagger, typewriter, parallax, camera moves, audio-reactive, Google Fonts, captions, full end-to-end example.
+- [`RENDERING.md`](RENDERING.md) — CLI, props passing, Zod schemas, Lambda, Cloud Run, programmatic API, `<Player>` embedding.
+- [`PACKAGES.md`](PACKAGES.md) — flat table of every `@remotion/*` package and what it's for.
 - [`GOTCHAS.md`](GOTCHAS.md) — the full list of pitfalls with fixes.
 
 ## Key docs
@@ -90,4 +103,4 @@ Load these only when needed — keep `SKILL.md` in context by default:
 - Animating: https://www.remotion.dev/docs/animating-properties
 - CLI: https://www.remotion.dev/docs/cli
 - Lambda: https://www.remotion.dev/docs/lambda
-- License (commercial use): https://www.remotion.dev/docs/license — companies with 4+ employees need a paid license; flag this to the user on any commercial project.
+- License (commercial use): https://www.remotion.dev/docs/license — for-profit organisations with **more than 3 employees** need a paid company license; flag this to the user on any commercial project.

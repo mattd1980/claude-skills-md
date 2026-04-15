@@ -7,11 +7,11 @@ npx create-video@latest <project-name>
 # or: npm create video@latest / pnpm create video / bun create video / yarn create video
 ```
 
-Requires Node 16+ (Node 20+ recommended for Remotion 4.x). Chromium is auto-installed by `@remotion/renderer` on first render.
+**Node 20+ required** for current Remotion 4.x (Node 18 reached EOL April 2025). Chromium is auto-installed by `@remotion/renderer` on first render.
 
 ## Templates
 
-Select in the interactive prompt or via CLI flag.
+Select in the interactive prompt or via CLI flag. Current list per https://www.remotion.dev/templates — if unsure, fetch the live list.
 
 | Template | Use when |
 |---|---|
@@ -19,15 +19,22 @@ Select in the interactive prompt or via CLI flag.
 | `hello-world-javascript` | User insists on JS. |
 | `blank` | Experienced user wants minimal scaffolding. |
 | `empty` | Absolute minimum — you'll build everything. |
-| `still` | Generating images only (no animation). |
-| `tailwind` | Tailwind CSS pre-wired. |
+| `stills` | Generating images only (no animation). |
+| `tailwind` | Tailwind CSS pre-wired (use `tailwind-v4` package for Tailwind v4). |
 | `next` / `next-pages-dir` | Embedding Remotion in a Next.js app (App Router or Pages Router). |
 | `remix` | Remix integration. |
-| `react-router` | Plain React Router app. |
+| `react-router` | React Router 7 app. |
 | `three` | react-three-fiber / 3D scenes. |
 | `skia` | `@shopify/react-native-skia` rendering. |
 | `audiogram` | Audio waveform + subtitle videos (podcasts, clips). |
-| `tts-google` / `tts-azure` | Text-to-speech pipelines. |
+| `recorder` | Remotion Recorder — screen/webcam recording workflow. |
+| `tiktok` | TikTok-style word-by-word captioned video. |
+| `code-hike` | Code walkthrough videos (Code Hike integration). |
+| `music-visualization` | Music visualizer starter. |
+| `stargazer` | GitHub stargazer animation. |
+| `prompt-to-video` | AI-driven prompt → video starter. |
+| `electron` | Electron desktop app using Remotion. |
+| `render-server` | Express server exposing render endpoints. |
 | `overlay` | Next.js visual editor starter (timeline-based editor). |
 
 ## Project layout (default template)
@@ -55,27 +62,7 @@ registerRoot(RemotionRoot);
 
 ### `src/Root.tsx` — all compositions registered here
 
-One `<Composition>` per renderable video. The `id` is what you pass to `remotion render`.
-
-```tsx
-import {Composition} from 'remotion';
-import {MyScene} from './MyScene';
-
-export const RemotionRoot: React.FC = () => (
-  <>
-    <Composition
-      id="MyScene"
-      component={MyScene}
-      durationInFrames={150}
-      fps={30}
-      width={1920}
-      height={1080}
-      defaultProps={{title: 'Hello'}}
-    />
-    {/* More <Composition> entries as needed */}
-  </>
-);
-```
+One `<Composition>` per renderable video. The `id` is what you pass to `remotion render`. See the skeleton in `SKILL.md`; add more `<Composition>` entries as the project grows.
 
 ### Default dimensions
 
@@ -116,4 +103,4 @@ Config.overrideWebpackConfig((c) => c); // escape hatch
 
 ## Licensing — flag on commercial work
 
-Remotion uses a custom company license. Companies with 4+ employees need a paid license. Mention this when the user describes commercial use and link https://www.remotion.dev/docs/license.
+Remotion uses a custom company license. For-profit organisations with **more than 3 employees** need a paid license. Mention this when the user describes commercial use and link https://www.remotion.dev/docs/license.

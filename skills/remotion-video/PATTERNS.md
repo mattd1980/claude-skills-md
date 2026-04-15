@@ -100,15 +100,40 @@ const rotation = (frame / fps) * 360 / 4; // 360° every 4 seconds
 // style={{transform: `rotate(${rotation}deg)`}}
 ```
 
-## Audio-reactive scale (using an AudioContext analysis done ahead of time)
+## Audio-reactive scale
 
-Run `@remotion/media-utils`'s `getAudioData()` + `visualizeAudio()` server-side or in a `calculateMetadata`; pass peaks as props and map peak-per-frame to scale:
+Use `@remotion/media-utils` to analyse audio and drive any animated value from the current amplitude. Load audio data once with `delayRender`, then sample it per frame with `visualizeAudio`.
 
 ```tsx
-import {getAudioDurationInSeconds} from '@remotion/media-utils';
-// peaks: number[] length = durationInFrames
-const amp = peaks[frame] ?? 0;
-const scale = 1 + amp * 0.3;
+import {useAudioData, visualizeAudio} from '@remotion/media-utils';
+import {staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+
+const audioSrc = staticFile('music.mp3');
+
+export const AudioReactive: React.FC = () => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const audioData = useAudioData(audioSrc);       // null until loaded (uses delayRender internally)
+
+  if (!audioData) return null;
+
+  const visualization = visualizeAudio({
+    fps,
+    frame,
+    audioData,
+    numberOfSamples: 16,
+  });                                              // number[] of amplitudes in [0, 1]
+
+  const amp = visualization[0] ?? 0;
+  const scale = 1 + amp * 0.6;
+
+  return (
+    <>
+      <Audio src={audioSrc} />
+      <div style={{transform: `scale(${scale})`}}>🔊</div>
+    </>
+  );
+};
 ```
 
 ## Scene transitions (fade / slide between sequences)
@@ -137,7 +162,25 @@ Other presentations: `slide`, `wipe`, `flip`, `clockWipe`, `iris`, `none`.
 </Sequence>
 ```
 
-## Subtitles / captions from a JSON
+## Custom fonts (Google Fonts)
+
+Never `<link>` to Google Fonts from HTML — it races the renderer. Use `@remotion/google-fonts`:
+
+```tsx
+import {loadFont} from '@remotion/google-fonts/Inter';
+
+const {fontFamily} = loadFont();
+
+export const Title: React.FC = () => (
+  <h1 style={{fontFamily, fontWeight: 700}}>Hello</h1>
+);
+```
+
+`loadFont()` handles `delayRender`/`continueRender` internally. Select weights/subsets: `loadFont('normal', {weights: ['400', '700'], subsets: ['latin']})`. For a custom `.woff2` in `public/`, wrap your own `FontFace.load()` in `delayRender`/`continueRender`.
+
+## Subtitles / captions
+
+### Simple JSON timeline
 
 ```tsx
 import captions from './captions.json'; // [{from, durationInFrames, text}]
@@ -153,7 +196,32 @@ import captions from './captions.json'; // [{from, durationInFrames, text}]
 ))}
 ```
 
-For Whisper-generated captions with word timings, see `@remotion/captions` + `@remotion/install-whisper-cpp`.
+### TikTok-style word-by-word with `@remotion/captions`
+
+For Whisper-generated word timings:
+
+```tsx
+import {createTikTokStyleCaptions, type Caption} from '@remotion/captions';
+
+// captions: Caption[] from Whisper, e.g. [{text, startMs, endMs, timestampMs, confidence}, ...]
+const {pages} = createTikTokStyleCaptions({
+  captions,
+  combineTokensWithinMilliseconds: 1200,
+});
+
+// Each page is a group of words shown together.
+pages.map((page, i) => {
+  const fromFrame = Math.round((page.startMs / 1000) * fps);
+  const duration = Math.round(((page.tokens.at(-1)!.toMs - page.startMs) / 1000) * fps);
+  return (
+    <Sequence key={i} from={fromFrame} durationInFrames={duration}>
+      {/* render page.tokens with per-word highlight based on useCurrentFrame() */}
+    </Sequence>
+  );
+});
+```
+
+Pair with `@remotion/install-whisper-cpp` to generate the captions file locally. The `tiktok` starter template wires all of this up end-to-end.
 
 ## Looping a clip shorter than the composition
 
@@ -162,3 +230,80 @@ For Whisper-generated captions with word timings, see `@remotion/captions` + `@r
   <Sparkle />
 </Loop>
 ```
+
+## Full end-to-end example
+
+A complete composition combining titles, a video clip, background music, a transition, and captions. Render it with `npx remotion render src/index.ts Showcase out.mp4`.
+
+```tsx
+// src/Showcase.tsx
+import {
+  AbsoluteFill, Audio, Img, OffthreadVideo, Sequence, interpolate, spring,
+  staticFile, useCurrentFrame, useVideoConfig,
+} from 'remotion';
+import {TransitionSeries, linearTiming} from '@remotion/transitions';
+import {fade} from '@remotion/transitions/fade';
+import {loadFont} from '@remotion/google-fonts/Inter';
+
+const {fontFamily} = loadFont();
+
+const Title: React.FC<{text: string}> = ({text}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const scale = spring({frame, fps, config: {damping: 12}});
+  const opacity = interpolate(frame, [0, 15], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
+  return (
+    <AbsoluteFill style={{background: '#0a0a0a', justifyContent: 'center', alignItems: 'center'}}>
+      <h1 style={{fontFamily, color: 'white', fontSize: 120, opacity, transform: `scale(${scale})`}}>
+        {text}
+      </h1>
+    </AbsoluteFill>
+  );
+};
+
+const Clip: React.FC = () => (
+  <AbsoluteFill>
+    <OffthreadVideo src={staticFile('clip.mp4')} trimBefore={0} trimAfter={120} />
+  </AbsoluteFill>
+);
+
+export const Showcase: React.FC<{headline: string}> = ({headline}) => (
+  <AbsoluteFill>
+    <Audio src={staticFile('music.mp3')} volume={(f) => (f > 60 && f < 180 ? 0.25 : 0.6)} />
+    <TransitionSeries>
+      <TransitionSeries.Sequence durationInFrames={60}>
+        <Title text={headline} />
+      </TransitionSeries.Sequence>
+      <TransitionSeries.Transition presentation={fade()} timing={linearTiming({durationInFrames: 15})} />
+      <TransitionSeries.Sequence durationInFrames={120}>
+        <Clip />
+      </TransitionSeries.Sequence>
+    </TransitionSeries>
+  </AbsoluteFill>
+);
+```
+
+```tsx
+// src/Root.tsx
+import {Composition} from 'remotion';
+import {z} from 'zod';
+import {Showcase} from './Showcase';
+
+const schema = z.object({headline: z.string()});
+
+export const RemotionRoot: React.FC = () => (
+  <Composition
+    id="Showcase"
+    component={Showcase}
+    schema={schema}
+    defaultProps={{headline: 'Ship it'}}
+    durationInFrames={195}  // 60 title + 120 clip + 15 overlap
+    fps={30}
+    width={1920}
+    height={1080}
+  />
+);
+```
+

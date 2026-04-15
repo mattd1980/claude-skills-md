@@ -24,16 +24,20 @@ npx remotion render [entry-point] <composition-id> [output]
 
 | Flag | Purpose |
 |---|---|
-| `--codec h264` | `h264` (default), `h265`, `vp8`, `vp9`, `prores`, `gif`, `mp3`, `aac`, `wav`. |
+| `--codec h264` | `h264` (default), `h265`, `vp8`, `vp9`, `av1`, `prores`, `gif`, `mp3`, `aac`, `wav`. |
 | `--props='{"title":"Hi"}'` | JSON string or path to a `.json` file (`--props=./props.json`). |
 | `--image-format jpeg` | `jpeg` (faster) or `png` (slower, supports alpha). |
+| `--jpeg-quality 80` | JPEG quality 0–100. Renamed from `--quality` in v4.0. |
 | `--concurrency 8` | Parallel frame rendering. Defaults to half your CPU. |
 | `--scale 2` | 2× resolution. |
 | `--crf 18` | Quality (lower = better; 18 is near-visually-lossless for h264). |
-| `--frames 30-90` | Render only a range. `--frames 42` for a single frame. |
+| `--frames 30-90` | Render only a range. `--frames=42` for a single frame. |
+| `--hardware-acceleration` | `disable` (default), `if-possible`, `required`. GPU-accelerated encoding (4.0.228+). |
 | `--overwrite` | Overwrite existing output. |
 | `--log=verbose` | Debug renderer issues. |
 | `--quiet` | CI-friendly output. |
+
+**Removed in v4:** `--ffmpeg-executable` and `--ffprobe-executable` — Remotion now bundles its own ffmpeg. Porting from v3? Drop these flags.
 
 ### Still image
 
@@ -74,9 +78,20 @@ const schema = z.object({
 
 The component's props type should match `z.infer<typeof schema>`.
 
+For richer Studio input controls, import from `@remotion/zod-types`:
+
+```ts
+import {zColor, zTextarea} from '@remotion/zod-types';
+
+const schema = z.object({
+  background: zColor(),     // Studio renders a color picker
+  caption: zTextarea(),     // Studio renders a multi-line textarea
+});
+```
+
 ## `calculateMetadata` — dynamic duration/dimensions from props
 
-Use when duration depends on input (e.g., matching an audio clip length):
+Can override any of `durationInFrames`, `width`, `height`, `fps`, and merge into `defaultProps`. Use when duration depends on input (e.g., matching an audio clip length):
 
 ```tsx
 import {getAudioDurationInSeconds} from '@remotion/media-utils';
@@ -121,9 +136,37 @@ await renderMedia({
 
 Use this for: batch pipelines, queue workers, embedded in a Node backend.
 
+### Rust-accelerated rendering
+
+Remotion 4.x moved the compositor hot path to a Rust binary (`@remotion/compositor-*` platform packages). Much of the perf tuning needed in v3 (GL backends, swiftshader flags) is now automatic. If you still hit issues, `--hardware-acceleration=if-possible` is usually the knob to reach for first.
+
+## Embedding in a React app: `@remotion/player`
+
+For live previews in a React UI (dashboards, UGC editors, SaaS landing pages):
+
+```tsx
+import {Player} from '@remotion/player';
+import {Showcase} from './Showcase';
+
+<Player
+  component={Showcase}
+  inputProps={{headline: 'Hi'}}
+  durationInFrames={195}
+  compositionWidth={1920}
+  compositionHeight={1080}
+  fps={30}
+  style={{width: '100%'}}
+  controls
+/>
+```
+
+`<Player>` is a normal React component — it runs in the browser, no rendering backend required. Pair with `renderMediaOnLambda` to export what the user previews. Docs: https://www.remotion.dev/docs/player
+
 ## Lambda rendering (`@remotion/lambda`)
 
-For high concurrency or serverless. One-time setup:
+For high concurrency or serverless. Function names follow the convention `remotion-render-<version>-mem<MB>mb-disk<MB>mb-<timeout>sec` (e.g. `remotion-render-4-0-420-mem2048mb-disk2048mb-120sec`). You pass this as `functionName` — don't confuse it with `serveUrl` (the site URL).
+
+One-time setup:
 
 ```bash
 npx remotion lambda policies user      # show required IAM policy
@@ -153,6 +196,8 @@ const progress = await getRenderProgress({renderId, bucketName, functionName, re
 Output lands in S3. Trade-off: fast for many concurrent renders, more moving parts than local.
 
 ## Cloud Run (`@remotion/cloudrun`)
+
+> **Alpha, not actively developed** as of April 2026 (https://www.remotion.dev/docs/cloudrun). Prefer Lambda for production. Kept here because some GCP-only orgs still need it.
 
 Similar to Lambda but on GCP. Setup: `npx remotion cloudrun services deploy`, then `renderMediaOnCloudrun`.
 
