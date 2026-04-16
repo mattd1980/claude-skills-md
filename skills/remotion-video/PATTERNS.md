@@ -40,6 +40,20 @@ const scale = spring({frame, fps, config: {damping: 12}});
 // style={{transform: `scale(${scale})`}}
 ```
 
+## Title card (enter / hold / exit)
+
+Rule of thumb at 30fps: enter 12–18 frames, hold 45–60 frames, exit 12–18 frames. Total ≈ 2.5s — the typical title-card duration in a demo video.
+
+```tsx
+const enter = spring({frame, fps, config: {damping: 12}});
+const exit = interpolate(frame, [durationInFrames - 18, durationInFrames], [1, 0], {
+  extrapolateLeft: 'clamp',
+  extrapolateRight: 'clamp',
+});
+const opacity = Math.min(enter, exit);
+// style={{opacity, transform: `scale(${enter})`}}
+```
+
 ## Staggered entrance (list of items)
 
 ```tsx

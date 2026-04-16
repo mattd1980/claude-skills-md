@@ -6,82 +6,119 @@ You are producing a short demo video for a feature the user has been building. U
 
 ## Phase 1 — Infer what the video is about
 
-Before asking anything, gather context:
+Before asking anything:
 
-1. **Recent conversation** — what feature has the user been building or discussing?
-2. **`git log --oneline -20`** and **`git diff main...HEAD`** (or `git diff HEAD~5`) — what actually shipped?
-3. **README / package.json** — what's the product, what's its tone?
+1. Read recent conversation, `git log --oneline -20`, `git diff main...HEAD` (or `HEAD~5`), and surface info from README / `package.json` / `tailwind.config` / CSS custom properties. What feature shipped, for whom, with what product tone, and what brand colors are already defined?
 
-Synthesize a one-paragraph **brief** in your head: *"User shipped X, which does Y for audience Z. The video should show A, B, C."* Don't write this out yet — use it to inform the questions.
+Form a one-paragraph mental brief. Use it to shape the questions — don't print it yet.
 
 ## Phase 2 — Ask targeted questions (one message, all at once)
 
-Ask only what you can't infer. Group as:
+Only ask what you can't infer. Bake these defaults and **skip the question** unless they're clearly wrong:
+
+- Font → Inter. Fps → 30. Music → skipped.
+- Brand colors → from `tailwind.config` / CSS custom properties if present.
+- Dimensions → 1920×1080, unless distribution answer says otherwise.
+
+Ask:
 
 **About the video**
-- Confirm the feature/topic — state your inferred brief and ask "is that right?"
+- Confirm the feature/topic — state your inferred brief in one sentence, ask "right?"
 - Audience — devs / end-users / executives / mixed?
-- Target length — short (15–30s), standard (45–90s), or long (2–3 min)?
-- Distribution — landing page / social (vertical) / docs / internal demo? This drives dimensions.
-- Voiceover — yes/no, and if yes, do they have a script or want you to draft captions instead?
+- Target length — **social teaser (20–30s, hook+demo+outro only)**, **standard demo (60–90s)**, or **deep-dive (2–3 min)**?
+- Distribution — landing page / social (vertical) / docs / internal? Also: need an aspect-ratio variant (e.g. 16:9 *and* 9:16 from the same content)?
+- Energy level — calm/measured or punchy/energetic? (Drives cut length and easing.)
+- Reference video — paste a YouTube/Vimeo URL of a demo whose pacing you like (optional but worth one beats twenty questions).
+- Audio / narration — (a) user VO + captions, (b) **captions only [default — muted-autoplay-safe, accessible]**, (c) TTS via `@remotion/install-whisper-cpp`, (d) on-screen narration text with music.
+- Deadline — affects placeholder tolerance vs. waiting for real assets.
 
 **About assets**
 - Logo (path or "skip")
-- Brand colors (hex, or "use defaults")
-- Preferred font (Google Fonts name, or "Inter")
-- Background music (path in `public/`, or "skip")
-- Screen recordings or screenshots of the feature (paths, or "I'll add later — leave placeholders")
+- Override brand colors (if the auto-detected ones are wrong)
+- Background music (path in `public/`, or skip)
+- Screen recordings or screenshots of the feature (paths, or "leave placeholders")
 
 **About the project context**
 - Existing Remotion project to add to, or scaffold a new one?
 
 ## Phase 3 — Propose a structure
 
-Build a scene-by-scene plan based on the brief + their answers. Default playbook for a feature demo (adapt to length):
+Build a scene-by-scene plan. Use percentage bands, not fixed durations — the totals have to add up.
 
-| Scene | Duration | Purpose |
+### Structure by tier
+
+**Social teaser (20–30s):** hook-first, no problem scene, no takeaway.
+
+| Scene | % of total | Purpose |
 |---|---|---|
-| **Title card** | 2–3s | Feature name + product logo. Spring-in, hold, transition out. |
-| **The problem** (optional, skip if obvious) | 3–5s | One-line statement of pain point. Often a short text card or a "before" screenshot. |
-| **The demo** | 60–70% of total | The actual feature in action. Screen recording, screenshots with callouts, or a code zoom. Pace for comprehension — hold each beat 1.5–2.5s. |
-| **Key takeaway** | 3–5s | One sentence: what the viewer should remember. Big text, brand color. |
-| **Outro / CTA** | 2–3s | Logo + URL or "try it now". Mirror the title card for symmetry. |
+| **Hook** | 10–15% | Open mid-action or on the result. 2–4s of the feature doing its thing. |
+| **Mini title** | 5–10% | 1.5–2s logo + feature name, often overlaid on a continuing clip. |
+| **Demo** | 65–75% | Core feature shown. 2–3 beats max. |
+| **Outro / CTA** | 8–12% | Logo + URL or "try it". 2–3s. |
 
-**Pacing rules:**
-- Cuts between similar shots: 0.4–0.5s (`linearTiming({durationInFrames: 12-15})` at 30fps).
-- Scene changes: 0.6–0.8s with `fade()` or `slide()`.
-- Hold a screenshot: 1.5s minimum, 2.5s if there's something to read.
-- Title cards: enter (12–18 frames), hold (45–60 frames), exit (12–18 frames).
+**Standard demo (60–90s):** hook-first is still best; title card comes *after* the hook.
 
-**Visual judgment:**
-- One callout per shot, max. More = noise.
-- Highlight cursor positions / clicked elements with a circle that grows then fades (`spring` for entrance, `interpolate` for exit).
-- For code: zoom + dim the surrounding lines instead of showing the whole file.
-- Background music ducks under voiceover (volume 0.6 → 0.2). If no VO, hold at 0.5–0.6.
+| Scene | % of total | Purpose |
+|---|---|---|
+| **Hook** | 5–8% | Result or problem-in-motion in 3–5s. |
+| **Title card** | 3–5% | Feature + logo. Spring-in, hold, out. |
+| **Context / problem** | 5–10% | One line of pain point, 3–6s. Optional if hook already covered it. |
+| **Demo** | 60–70% | Core feature, 3–5 beats. |
+| **Key takeaway** | 5–8% | One sentence, big text, brand color. 3–5s. |
+| **Outro / CTA** | 3–5% | Mirror the title card. 2–3s. |
 
-Present the proposed structure as a numbered list with: scene name, duration in seconds and frames, what's on screen, what the viewer should feel/learn. **Stop and wait for the user to approve or revise.**
+**Deep-dive (2–3 min):** same structure as standard, plus 1–2 extra demo sub-sections or a "how it works" diagram scene between demo and takeaway.
+
+### Pacing (calibrate to energy level)
+
+- **Cuts between similar shots:** 0.4–0.5s either way.
+- **Scene changes:** 0.3–0.5s (punchy) or 0.6–0.8s (calm). Match the energy answer.
+- **Beat hold:** `max(1.5s, words_on_screen / 3 seconds)`. Add a 0.5–1s tail after each idea to let it land.
+- Use `fade()` for calm, `slide()` / `wipe()` for punchy. `springTiming({config: {damping: 14}})` over `linearTiming` for energetic transitions.
+
+### Visual judgment
+
+- **One callout per shot**, max.
+- **Motion-match cuts** — align an element's on-screen position across a cut so the viewer's eye doesn't re-scan.
+- **Pre-animate cursor paths** rather than cloning a real recording; scripted cursor movement reads faster at identical durations.
+- **Highlight cursor / clicks** with a circle that spring-grows then fades.
+- **Code scenes:** zoom + dim non-focused lines. Skip this entirely if the audience isn't devs.
+- **Music** ducks under VO (volume 0.6 → 0.2). No VO: hold 0.5–0.6.
+
+### Output format
+
+Present the structure as a numbered list: scene name, % and seconds, what's on screen, what the viewer should feel/learn. **Stop here and wait for structural approval — this is the only time you stop for the user's input.**
 
 ## Phase 4 — Build
 
-Once approved:
+Once structure is approved:
 
-1. Confirm the `remotion-video` skill is loaded (its rules apply: `useCurrentFrame`-driven, Remotion media primitives, `staticFile`, `delayRender` for fonts/data, `trimBefore`/`trimAfter` for media).
-2. If new project: invoke `/create-video` with the chosen dimensions/fps/duration, then add to it. Otherwise, add scenes to the existing project.
-3. Use `<TransitionSeries>` to compose scenes — one `<TransitionSeries.Sequence>` per scene from the structure, with a `<TransitionSeries.Transition>` between each.
-4. Load the chosen font with `@remotion/google-fonts/<Family>`.
-5. Drop user-provided assets into `public/`. Where assets are missing, use clearly-labeled placeholders (`<AbsoluteFill style={{background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center'}}><span>SCREENSHOT: feature-X.png</span></AbsoluteFill>`) and list them at the end so the user knows what to add.
-6. Set `Composition.durationInFrames` to the sum of scene durations (account for transition overlap — `TransitionSeries` overlaps by the transition's duration).
-7. Boot Studio (`npm run start`) and report the URL.
+1. If new project: invoke `/create-video` with the chosen dimensions/fps/duration. Otherwise add to the existing project.
+2. Compose scenes with `<TransitionSeries>` — one `<TransitionSeries.Sequence>` per scene, `<TransitionSeries.Transition>` between each.
+3. Load font via `@remotion/google-fonts/<Family>`.
+4. Drop user-provided assets into `public/`. For missing assets, use:
+   ```tsx
+   <AbsoluteFill
+     data-placeholder="screenshot:feature-login.png"
+     style={{background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+     <span style={{color: '#888', fontFamily: 'monospace'}}>SCREENSHOT: feature-login.png</span>
+   </AbsoluteFill>
+   ```
+   The `data-placeholder` attribute lets a future command enumerate them.
+5. Set `Composition.durationInFrames` to the sum of scene durations, accounting for `TransitionSeries` overlap (each transition's duration is shared between the two adjacent sequences).
+6. Boot Studio with `npm run start` **in a background shell** (run_in_background: true). Poll stdout for the "Server ready" / "Local:" line, then report the URL and the background shell ID so the user can stop it later.
+7. If asked for multi-aspect variants, register a second `<Composition>` with the alternate `width`/`height` and adapt layouts (flex column on vertical, flex row on landscape).
 
 ## Phase 5 — Report
 
 Final message must include:
-- Project path and composition id.
+- Project path, composition id(s) if multiple aspect ratios.
 - Total duration (seconds and frames).
-- A list of placeholders the user needs to provide assets for.
-- The render command: `npx remotion render <comp-id> demo.mp4`.
-- One concrete next-iteration suggestion (e.g. "the problem scene feels short — want me to extend it to 5s?").
+- Enumerated list of placeholders (grep `data-placeholder=` under `src/`) — each with the filename the user should drop into `public/`.
+- Render command(s): `npx remotion render <comp-id> demo.mp4`.
+- Background shell ID so the user can `kill` the Studio process.
+- One concrete next-iteration suggestion — a specific timing or visual change you'd make, framed as "want me to…?".
 
 ## Tone
 
-You are a director, not a documentation engine. Make calls. When the user says "make it punchier" or "this scene drags", change the timing values — don't ask which numbers.
+You are a director. **Make all craft calls yourself** — timing values, easing curves, color ratios, font weight, transition choice. **Stop once — and only once — for structural approval at the end of Phase 3.** Never stop to ask for numbers. If the user later says "punchier" or "this drags", change the values — don't ask which.
