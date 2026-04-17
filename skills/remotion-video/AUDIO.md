@@ -229,6 +229,30 @@ Remotion layers all `<Audio>` components simultaneously. There is **no master ga
 
 Generate voiceover from a text script, transcribe for word-timed captions, and sync in the composition.
 
+### Step 0: Check for API keys
+
+Before running any TTS, check that the relevant env var exists. If missing, **stop and ask the user** rather than failing mid-pipeline.
+
+```ts
+// For OpenAI TTS
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error('OPENAI_API_KEY not set. Add it to ~/.claude/settings.json under env, or export it in your shell.');
+}
+
+// For ElevenLabs
+if (!process.env.ELEVENLABS_API_KEY) {
+  throw new Error('ELEVENLABS_API_KEY not set. Add it to ~/.claude/settings.json under env, or export it in your shell.');
+}
+```
+
+**For Claude to surface missing keys gracefully:** before scripting a TTS pipeline, inspect the environment. If the key is missing, say:
+
+> "I need `OPENAI_API_KEY` (or `ELEVENLABS_API_KEY`) to generate the voiceover. Easiest: add it to `~/.claude/settings.json` under `"env"` so every session has it. Or paste it now and I'll write it there. You can grab keys from:
+> - OpenAI: https://platform.openai.com/api-keys
+> - ElevenLabs: https://elevenlabs.io/app/settings/api-keys"
+
+Never hardcode keys in committed code. Never log them.
+
 ### Step 1: Generate audio
 
 **Option A — OpenAI TTS** (`openai` npm package):
