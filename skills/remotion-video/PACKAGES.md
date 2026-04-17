@@ -25,9 +25,12 @@ One-line reference for every package in the Remotion scope. Use it to pick the r
 | `@remotion/paths` | SVG path utilities (`getLength`, `getPointAtLength`, path math). |
 | `@remotion/noise` | Perlin / simplex noise helpers. |
 | `@remotion/layout-utils` | Text measurement (`measureText`, `fitText`). |
+| `@remotion/sfx` | Built-in sound effects library (v4.0.429+). Check this before sourcing external SFX. |
+| `@remotion/motion-blur` | `<CameraMotionBlur>` and `<Trail>` components for motion blur effects. |
+| `@remotion/animation-utils` | `makeTransform()` for type-safe composable CSS transforms. |
 | `@remotion/animated-emoji` | Animated emoji components. |
 | `@remotion/webcodecs` | Browser-side video conversion using WebCodecs. |
-| `@remotion/media-parser` | Low-level container/codec parsing. |
+| `@remotion/media-parser` | Low-level container/codec parsing (being succeeded by Mediabunny). |
 | `@remotion/compositor-*` | Platform-specific Rust compositor binaries (installed automatically — you should not depend on these directly). |
 
 When in doubt, check https://www.remotion.dev/docs/ — new helper packages land frequently.

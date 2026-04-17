@@ -365,11 +365,11 @@ After implementation, the skill should pass these tests:
 
 ---
 
-## 7. Open questions
+## 7. Open questions (resolved)
 
-1. **SFX files** — should the skill recommend specific royalty-free sources (freesound.org, kenney.nl), or just document the `public/sfx/` convention and let the user/command handle sourcing?
-2. **ElevenLabs / OpenAI TTS** — should `AUDIO.md` include specific API call patterns for TTS providers, or keep it provider-agnostic ("generate audio externally, save to `public/vo/`")?
-3. **`@remotion/sfx`** — does this package exist as a first-party SFX library, or was this a research false positive? Needs verification before documenting.
+1. ~~**SFX files**~~ → **Resolved:** recommend Kenney (CC0), Freesound, Mixkit, Pixabay, and `@remotion/sfx` as the zero-friction first choice. Documented in `AUDIO.md#recommended-free-sfx-sources`.
+2. ~~**ElevenLabs / OpenAI TTS**~~ → **Resolved:** include both. OpenAI TTS (`openai` npm) and ElevenLabs (`elevenlabs` npm) with minimal Node.js code. Documented in `AUDIO.md#tts-pipeline`.
+3. ~~**`@remotion/sfx`**~~ → **Resolved:** confirmed real. `@remotion/sfx` v4.0.448, official Remotion monorepo package. Documented in `AUDIO.md` and `PACKAGES.md`.
 
 ---
 

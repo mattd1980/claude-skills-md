@@ -93,10 +93,19 @@ Present the structure as a numbered list: scene name, % and seconds, what's on s
 
 Once structure is approved:
 
-1. If new project: invoke `/create-video` with the chosen dimensions/fps/duration. Otherwise add to the existing project.
+1. If new project: invoke `/create-video` with the chosen dimensions/fps/duration. Otherwise add to the existing project. Install `@remotion/sfx @remotion/motion-blur @remotion/noise` alongside the standard deps.
 2. Compose scenes with `<TransitionSeries>` — one `<TransitionSeries.Sequence>` per scene, `<TransitionSeries.Transition>` between each.
 3. Load font via `@remotion/google-fonts/<Family>`.
-4. Drop user-provided assets into `public/`. For missing assets, use:
+4. **Audio by default** (see `AUDIO.md`):
+   - If user provided background music: layer it with volume automation (fade in, duck under VO if present, fade out). See `AUDIO.md#duck-under-voiceover`.
+   - Add SFX on transitions: whoosh on `slide()`, soft swell on `fade()`, pop on spring entrances. Use `@remotion/sfx` first; fall back to `public/sfx/` assets. See `AUDIO.md#sfx-to-transition-mapping`.
+   - If VO/TTS requested: follow the `AUDIO.md#tts-pipeline` (generate → whisper.cpp → frame-synced captions).
+5. **Animation polish** (see `PATTERNS.md#advanced-animations`):
+   - Title card text: use **character stagger** instead of plain spring for more energy.
+   - Background: add subtle **noise-driven floating particles** behind content (low opacity, `@remotion/noise` for drift).
+   - Demo scenes: use **3D tilt entrance** (perspective + rotateX easing to 0) for screenshots/cards instead of flat fade-in.
+   - Transitions: apply **motion blur** (`<CameraMotionBlur>` with `shutterAngle={180} samples={8}`) on fast slide transitions only.
+6. Drop user-provided assets into `public/`. For missing assets, use:
    ```tsx
    <AbsoluteFill
      data-placeholder="screenshot:feature-login.png"
@@ -105,9 +114,9 @@ Once structure is approved:
    </AbsoluteFill>
    ```
    The `data-placeholder` attribute lets a future command enumerate them.
-5. Set `Composition.durationInFrames` to the sum of scene durations, accounting for `TransitionSeries` overlap (each transition's duration is shared between the two adjacent sequences).
-6. Boot Studio with `npm run start` **in a background shell** (run_in_background: true). Poll stdout for the "Server ready" / "Local:" line, then report the URL and the background shell ID so the user can stop it later.
-7. If asked for multi-aspect variants, register a second `<Composition>` with the alternate `width`/`height` and adapt layouts (flex column on vertical, flex row on landscape).
+7. Set `Composition.durationInFrames` to the sum of scene durations, accounting for `TransitionSeries` overlap (each transition's duration is shared between the two adjacent sequences).
+8. Boot Studio with `npm run start` **in a background shell** (run_in_background: true). Poll stdout for the "Server ready" / "Local:" line, then report the URL and the background shell ID so the user can stop it later.
+9. If asked for multi-aspect variants, register a second `<Composition>` with the alternate `width`/`height` and adapt layouts (flex column on vertical, flex row on landscape).
 
 ## Phase 5 — Report
 

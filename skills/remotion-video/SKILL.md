@@ -31,6 +31,10 @@ Users routinely under-specify these three — confirm or state your assumption b
 - **User wants to sequence/time elements** → wrap in `<Sequence from={X} durationInFrames={Y}>`. `useCurrentFrame()` resets to 0 inside.
 - **User wants to render** → `npx remotion render <entry?> <comp-id> <out>`. Pass props with `--props='{...}'` or `--props=./file.json`. See `RENDERING.md`.
 - **User wants an audio/video/image asset** → Remotion's `<Audio>`, `<OffthreadVideo>` (preferred for mp4) or `<Video>`, `<Img>`. Never raw HTML tags. Assets go in `public/` loaded via `staticFile('name.ext')`.
+- **User wants background music / SFX** → see `AUDIO.md`. Volume automation, layering, SFX-to-transition mapping, `@remotion/sfx`.
+- **User wants voiceover / TTS** → see `AUDIO.md#tts-pipeline`. OpenAI TTS or ElevenLabs → whisper.cpp transcription → frame-synced captions.
+- **User wants audio-reactive visuals** → see `AUDIO.md#audio-reactive-visuals`. EQ bars, beat-synced pulse, waveform ring via `visualizeAudio`.
+- **User wants advanced animation** → see `PATTERNS.md#advanced-animations`. Particles, 3D transforms, path drawing/morphing, noise, motion blur, text effects.
 
 ## Non-negotiable rules
 
@@ -91,8 +95,9 @@ export const RemotionRoot: React.FC = () => (
 Load these only when needed — keep `SKILL.md` in context by default:
 
 - [`SETUP.md`](SETUP.md) — scaffold commands, templates, project layout, licensing note.
+- [`AUDIO.md`](AUDIO.md) — Full audio production: `<Audio>` props, `@remotion/sfx`, volume automation (6 patterns), SFX timing, layering, TTS pipeline (OpenAI + ElevenLabs + whisper.cpp), audio-reactive visuals (EQ bars, beat pulse, waveform ring).
 - [`CORE_API.md`](CORE_API.md) — Composition, Sequence, hooks, interpolate, spring, media components, `delayRender` — with signatures and examples.
-- [`PATTERNS.md`](PATTERNS.md) — fade, slide, stagger, typewriter, parallax, camera moves, audio-reactive, Google Fonts, captions, full end-to-end example.
+- [`PATTERNS.md`](PATTERNS.md) — Basic (fade, slide, stagger, parallax, Google Fonts, captions, end-to-end example) + Advanced (particles, 3D perspective, SVG path drawing, path morphing, noise-driven motion, motion blur, 5 text effects, morph transitions).
 - [`RENDERING.md`](RENDERING.md) — CLI, props passing, Zod schemas, Lambda, Cloud Run, programmatic API, `<Player>` embedding.
 - [`PACKAGES.md`](PACKAGES.md) — flat table of every `@remotion/*` package and what it's for.
 - [`GOTCHAS.md`](GOTCHAS.md) — the full list of pitfalls with fixes.
